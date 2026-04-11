@@ -1,6 +1,7 @@
 from services.animator import SignAnimator
 from services.recorder import GestureRecorder
 from services.trainer import GestureTrainer
+from services.tts_service import speak_async
 from model.ml_model import GestureModel
 import tkinter as tk
 from tkinter import simpledialog
@@ -23,6 +24,25 @@ class AppController:
     def use_ai(self):
         self.ml_model.set_view(self.view)
         self.ml_model.predict_live()
+
+    def stop_ai(self):
+        self.ml_model.stop_live()
+        self.view.update_status("Stopping AI…")
+
+    def clear_translation(self):
+        if hasattr(self, "view"):
+            self.view.clear_translation_text()
+            self.view.update_status("Translation line cleared.")
+
+    def speak_translation_line(self):
+        if not hasattr(self, "view"):
+            return
+        line = self.view.get_translation_text()
+        if not line:
+            self.view.update_status("Nothing to read yet.")
+            return
+        speak_async(line)
+        self.view.update_status("Reading translation line…")
 
     def record_gesture(self):
         label = simpledialog.askstring("Gesture Label", "Enter gesture name (e.g., HELLO):")

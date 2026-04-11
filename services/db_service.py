@@ -1,5 +1,5 @@
-from utils.database import engine, Base
-from model.db_model import GestureData
+from utils.database import Base, engine
+from model.gesture_data import GestureData
 
 def initialize_database():
     """

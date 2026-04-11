@@ -1,6 +1,5 @@
-# requirements.txt
 # FULLY COMPATIBLE: macOS (Intel + Apple Silicon), Windows 10/11
-# Tested on Python 3.11
+# Tested on Python 3.11+
 
 # === CORE ML & DATA ===
 numpy==1.26.4
@@ -14,12 +13,13 @@ mediapipe==0.10.14
 
 # === DATABASE ===
 SQLAlchemy==2.0.36
-mysql-connector-python==9.0.0
-pymysql==1.1.0
 
 # === GUI ===
 ttkbootstrap==1.18.1
 pillow==10.4.0
+
+# === TEXT-TO-SPEECH (offline, cross-platform) ===
+pyttsx3==2.99
 
 # === UTILITIES ===
 python-dotenv==1.0.0

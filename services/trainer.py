@@ -6,6 +6,7 @@ from model.db_model import GestureDatabase
 
 MODEL_PATH = "data/model.pkl"
 
+
 class GestureTrainer:
     def __init__(self):
         self.db = GestureDatabase()
@@ -15,10 +16,15 @@ class GestureTrainer:
         if len(rows) < 10:
             return False, "Need ≥10 samples to train."
 
-        X = np.array([r[1] for r in rows])   # data column (already list)
-        y = np.array([r[0] for r in rows])   # label column
+        X = np.array([r[1] for r in rows])
+        y = np.array([r[0] for r in rows])
 
-        model = KNeighborsClassifier(n_neighbors=3)
+        n_neighbors = min(5, max(3, int(np.sqrt(len(rows)))))
+        model = KNeighborsClassifier(
+            n_neighbors=n_neighbors,
+            weights="distance",
+            metric="euclidean",
+        )
         model.fit(X, y)
 
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)

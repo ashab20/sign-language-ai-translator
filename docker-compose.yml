@@ -1,29 +1,15 @@
 version: "3.9"
 
+# SQLite is stored in ./data/sign_ai.db — no separate DB container.
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: sign_ai_app
     volumes:
       - .:/app
-    depends_on:
-      - db
     env_file:
       - .env
     tty: true
     stdin_open: true
-
-  db:
-    image: mysql:8.1
-    container_name: sign_ai_db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ServBay.dev
-      MYSQL_DATABASE: sign_ai
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-
-volumes:
-  db_data:
