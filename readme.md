@@ -21,7 +21,7 @@
 
 | Component           | Version           | Notes                              |
 |---------------------|-------------------|------------------------------------|
-| **Python**          | 3.11.x (64-bit)   | Must be Python 3.11               |
+| **Python**          | 3.12.3 (64-bit)   | Must be Python 3.12               |
 | **Windows**         | 10 / 11 (64-bit)  | Fully tested                      |
 | **OpenCV**          | 4.10.0.84         | Pre-built wheels                  |
 | **MediaPipe**       | 0.10.14           | Works on Windows + Apple Silicon  |
@@ -51,7 +51,7 @@ or download as ZIP → extract
 #### 4. Create Virtual Environment (Recommended)
 ```bash
 python -m venv venv
-venv\Scripts\activate
+source venv\Scripts\activate
 ```
 You’ll see `(venv)` in your terminal
 
