@@ -3,16 +3,51 @@ import ttkbootstrap as tbs
 from ttkbootstrap.constants import *
 from typing import Callable
 
-try:
-    from ttkbootstrap.scrolled import ScrolledText as TranscriptText
-except ImportError:
-    TranscriptText = None
-
 from services.predictor import IGNORE_PREDICTIONS
 from utils.camera_permission import request_camera_permission
 
 # Match video frames drawn in ml_model / controller (480×360 RGB)
 CAM_W, CAM_H = 480, 360
+
+_SENTENCE_PLACEHOLDER = "(Completed signs appear here as a sentence — lower hands after each sign.)"
+
+
+class _CollapsibleSection:
+    """Single-column disclosure: click header to show or hide body."""
+
+    def __init__(
+        self,
+        parent,
+        title: str,
+        *,
+        start_open: bool = False,
+        pady: tuple[int, int] = (0, 6),
+    ):
+        self._open = start_open
+        self._title = title
+        self.outer = tbs.Frame(parent)
+        self.outer.pack(fill=X, pady=pady)
+        self.toggle_btn = tbs.Button(
+            self.outer,
+            text=self._button_label(),
+            command=self.toggle,
+            bootstyle=SECONDARY,
+        )
+        self.toggle_btn.pack(anchor=W, fill=X)
+        self.content = tbs.Frame(self.outer)
+        if start_open:
+            self.content.pack(fill=X, pady=(6, 0), padx=(6, 0))
+
+    def _button_label(self) -> str:
+        return ("▼ " if self._open else "▶ ") + self._title
+
+    def toggle(self) -> None:
+        self._open = not self._open
+        self.toggle_btn.configure(text=self._button_label())
+        if self._open:
+            self.content.pack(fill=X, pady=(6, 0), padx=(6, 0))
+        else:
+            self.content.pack_forget()
 
 
 class MainView:
@@ -49,7 +84,7 @@ class MainView:
         ).pack(anchor=W)
         tbs.Label(
             header,
-            text="Camera on the left — recognition, translation, and actions on the right.",
+            text="Camera on the left — use collapsible sections on the right to save space.",
             font=("Helvetica Neue", 11),
             bootstyle=SECONDARY,
         ).pack(anchor=W, pady=(4, 0))
@@ -83,12 +118,84 @@ class MainView:
 
         self.draw_on_canvas: Callable[[tk.PhotoImage], None] = keep_ref
 
-        # ——— Right: all other UI ———
+        # ——— Right column ———
         right_col = tbs.Frame(body)
         right_col.pack(side=LEFT, fill=BOTH, expand=True, anchor=N)
 
-        pred_outer = tbs.Labelframe(right_col, text="Recognition", padding=(12, 10))
-        pred_outer.pack(fill=X, pady=(0, 8))
+        # ——— Always visible: sentence + live controls ———
+        sentence_frame = tbs.Labelframe(
+            right_col, text="Signed sentence (live communicate)", padding=(12, 10)
+        )
+        sentence_frame.pack(fill=BOTH, expand=True, pady=(0, 8))
+
+        tbs.Label(
+            sentence_frame,
+            text="Start live, then sign each word and lower your hands to add it to the line below.",
+            font=("Helvetica Neue", 10),
+            bootstyle=SECONDARY,
+            wraplength=520,
+        ).pack(anchor=W, pady=(0, 6))
+
+        st_row = tbs.Frame(sentence_frame)
+        st_row.pack(fill=BOTH, expand=True, pady=(0, 8))
+        st_sb = tbs.Scrollbar(st_row, bootstyle=ROUND)
+        self.sentence_text = tk.Text(
+            st_row,
+            height=6,
+            font=("Consolas", 12),
+            wrap=tk.WORD,
+            yscrollcommand=st_sb.set,
+            bg="#2b2b2b",
+            fg="#e8e8e8",
+            insertbackground="#e8e8e8",
+            highlightthickness=1,
+            highlightbackground="#444",
+            borderwidth=0,
+        )
+        st_sb.config(command=self.sentence_text.yview)
+        self.sentence_text.pack(side=LEFT, fill=BOTH, expand=True)
+        st_sb.pack(side=RIGHT, fill=Y)
+
+        self.sentence_text.insert("1.0", _SENTENCE_PLACEHOLDER)
+        self.sentence_text.configure(state="disabled")
+
+        sent_btns = tbs.Frame(sentence_frame)
+        sent_btns.pack(fill=X)
+        tbs.Button(
+            sent_btns,
+            text="Clear sentence",
+            bootstyle=SECONDARY,
+            width=14,
+            command=self.controller.clear_sentence,
+        ).pack(side=LEFT, padx=(0, 8))
+        tbs.Button(
+            sent_btns,
+            text="Read sentence aloud",
+            bootstyle=INFO,
+            width=18,
+            command=self.controller.speak_sentence,
+        ).pack(side=LEFT, padx=2)
+
+        live_row = tbs.Frame(sentence_frame)
+        live_row.pack(fill=X, pady=(10, 0))
+        tbs.Button(
+            live_row,
+            text="Start live",
+            bootstyle=PRIMARY,
+            width=14,
+            command=self.controller.use_ai,
+        ).pack(side=LEFT, padx=(0, 6))
+        tbs.Button(
+            live_row,
+            text="Stop AI",
+            bootstyle=DANGER,
+            width=14,
+            command=self.controller.stop_ai,
+        ).pack(side=LEFT, padx=6)
+
+        # ——— Collapsible: Recognition ———
+        rec_sec = _CollapsibleSection(right_col, "Recognition", start_open=True)
+        pred_outer = rec_sec.content
 
         tbs.Label(
             pred_outer,
@@ -127,67 +234,14 @@ class MainView:
 
         tbs.Checkbutton(
             pred_outer,
-            text="Auto-start live translation on open",
+            text="Auto-start live on open",
             variable=self.auto_start_live,
             bootstyle="round-toggle",
         ).pack(anchor=W, pady=(6, 0))
 
-        trans = tbs.Labelframe(right_col, text="Live translation", padding=(12, 10))
-        trans.pack(fill=BOTH, expand=True, pady=(0, 8))
-
-        if TranscriptText is not None:
-            self.transcript = TranscriptText(
-                trans,
-                height=6,
-                font=("Consolas", 11),
-                wrap=tk.WORD,
-                bootstyle=SECONDARY,
-            )
-            self.transcript.pack(fill=BOTH, expand=True, pady=(0, 8))
-        else:
-            row = tbs.Frame(trans)
-            row.pack(fill=BOTH, expand=True, pady=(0, 8))
-            sb = tbs.Scrollbar(row, bootstyle=ROUND)
-            self.transcript = tk.Text(
-                row,
-                height=6,
-                font=("Consolas", 11),
-                wrap=tk.WORD,
-                yscrollcommand=sb.set,
-                bg="#2b2b2b",
-                fg="#e0e0e0",
-                insertbackground="#e0e0e0",
-                highlightthickness=0,
-                borderwidth=0,
-            )
-            sb.config(command=self.transcript.yview)
-            self.transcript.pack(side=LEFT, fill=BOTH, expand=True)
-            sb.pack(side=RIGHT, fill=Y)
-
-        self.transcript_body = self.transcript.text if hasattr(self.transcript, "text") else self.transcript
-
-        self.transcript_body.insert("1.0", "(Completed signs appear here as a sentence.)")
-        self.transcript_body.configure(state="disabled")
-
-        trans_btns = tbs.Frame(trans)
-        trans_btns.pack(fill=X)
-        tbs.Button(
-            trans_btns,
-            text="Clear line",
-            bootstyle=SECONDARY,
-            width=12,
-            command=self.controller.clear_translation,
-        ).pack(side=LEFT, padx=(0, 8))
-        tbs.Button(
-            trans_btns,
-            text="Read line aloud",
-            bootstyle=INFO,
-            width=14,
-            command=self.controller.speak_translation_line,
-        ).pack(side=LEFT, padx=2)
-
-        actions = tbs.Labelframe(right_col, text="Actions", padding=(12, 10))
-        actions.pack(fill=X, pady=(0, 8))
+        # ——— Collapsible: Train & record ———
+        train_sec = _CollapsibleSection(right_col, "Train & record", start_open=False)
+        actions = train_sec.content
 
         row1 = tbs.Frame(actions)
         row1.pack(fill=X, pady=(0, 6))
@@ -206,25 +260,11 @@ class MainView:
             command=self.controller.train_model,
         ).pack(side=LEFT, padx=6)
 
-        row2 = tbs.Frame(actions)
-        row2.pack(fill=X)
-        tbs.Button(
-            row2,
-            text="Start live",
-            bootstyle=PRIMARY,
-            width=14,
-            command=self.controller.use_ai,
-        ).pack(side=LEFT, padx=(0, 6))
-        tbs.Button(
-            row2,
-            text="Stop AI",
-            bootstyle=DANGER,
-            width=14,
-            command=self.controller.stop_ai,
-        ).pack(side=LEFT, padx=6)
-
-        anim = tbs.Labelframe(right_col, text="Text → sign animation", padding=(12, 10))
-        anim.pack(fill=X, pady=(0, 4))
+        # ——— Collapsible: Text → sign animation ———
+        anim_sec = _CollapsibleSection(
+            right_col, "Text → sign animation", start_open=False
+        )
+        anim = anim_sec.content
 
         self.text_var = tbs.StringVar(value="HELLO WORLD")
         tbs.Entry(
@@ -276,33 +316,41 @@ class MainView:
     def update_status(self, msg: str) -> None:
         self.status_var.set(msg)
 
-    def append_translation(self, token: str) -> None:
+    def append_sentence(self, token: str) -> None:
         t = (token or "").strip().upper()
         if not t or t in IGNORE_PREDICTIONS:
             return
-        self.transcript_body.configure(state="normal")
-        cur = self.transcript_body.get("1.0", "end").strip()
-        placeholder = "(Completed signs appear here as a sentence.)"
-        if cur == placeholder or not cur:
-            self.transcript_body.delete("1.0", "end")
-            self.transcript_body.insert("1.0", t)
+        self.sentence_text.configure(state="normal")
+        cur = self.sentence_text.get("1.0", "end").strip()
+        if cur == _SENTENCE_PLACEHOLDER or not cur:
+            self.sentence_text.delete("1.0", "end")
+            self.sentence_text.insert("1.0", t)
         else:
-            self.transcript_body.insert("end", " " + t)
-        self.transcript_body.configure(state="disabled")
-        self.transcript_body.see("end")
+            self.sentence_text.insert(tk.END, " " + t)
+        self.sentence_text.configure(state="disabled")
+        self.sentence_text.see(tk.END)
 
-    def clear_translation_text(self) -> None:
-        self.transcript_body.configure(state="normal")
-        self.transcript_body.delete("1.0", "end")
-        self.transcript_body.insert("1.0", "(Completed signs appear here as a sentence.)")
-        self.transcript_body.configure(state="disabled")
+    def clear_sentence_text(self) -> None:
+        self.sentence_text.configure(state="normal")
+        self.sentence_text.delete("1.0", "end")
+        self.sentence_text.insert("1.0", _SENTENCE_PLACEHOLDER)
+        self.sentence_text.configure(state="disabled")
 
-    def get_translation_text(self) -> str:
-        raw = self.transcript_body.get("1.0", "end").strip()
-        ph = "(Completed signs appear here as a sentence.)"
-        if raw == ph:
+    def get_sentence_text(self) -> str:
+        raw = self.sentence_text.get("1.0", "end").strip()
+        if raw == _SENTENCE_PLACEHOLDER:
             return ""
         return raw
+
+    # Backwards-compatible names for any older callers
+    def append_translation(self, token: str) -> None:
+        self.append_sentence(token)
+
+    def clear_translation_text(self) -> None:
+        self.clear_sentence_text()
+
+    def get_translation_text(self) -> str:
+        return self.get_sentence_text()
 
     def run(self) -> None:
         self.root.mainloop()

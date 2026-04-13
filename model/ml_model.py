@@ -1,6 +1,7 @@
 import cv2
 import threading
 from collections import Counter, deque
+from functools import partial
 from PIL import Image, ImageTk
 
 from services.predictor import GesturePredictor, IGNORE_PREDICTIONS
@@ -30,7 +31,9 @@ class GestureModel:
         if not self.view or self.is_running:
             return
         self.is_running = True
-        self.view.update_status("AI running — show your sign; lower hand when done.")
+        self.view.update_status(
+            "Live — sign each word, then lower hands to add it to the sentence box."
+        )
         threading.Thread(target=self._capture_loop, daemon=True).start()
 
     @staticmethod
@@ -50,6 +53,9 @@ class GestureModel:
         segment_preds: list = []
         frames_no_hand = 0
         had_hand = False
+        # Last label shown in Live (smoothed) that is a real sign — used when
+        # high-confidence frames are sparse but the UI still shows a stable word.
+        last_good_live: str | None = None
 
         while self.is_running:
             ret, frame = cap.read()
@@ -68,21 +74,34 @@ class GestureModel:
                     pred_buffer.append(pred)
                     segment_preds.append(pred)
                 smoothed = self._majority(list(pred_buffer))
+                if smoothed not in IGNORE_PREDICTIONS:
+                    last_good_live = smoothed
                 self.view.root.after(0, lambda p=smoothed: self.view.update_prediction(p))
             else:
                 frames_no_hand += 1
-                if (
-                    had_hand
-                    and frames_no_hand >= HAND_GONE_FRAMES
-                    and segment_preds
-                ):
-                    final_sign = self._majority(segment_preds)
+                if had_hand and frames_no_hand >= HAND_GONE_FRAMES:
+                    # End of sign: match sentence box to what you saw live when possible.
+                    if segment_preds:
+                        final_sign = self._majority(segment_preds)
+                    else:
+                        final_sign = self._majority(list(pred_buffer))
+                        if final_sign in IGNORE_PREDICTIONS and last_good_live:
+                            final_sign = last_good_live
+                        elif final_sign in IGNORE_PREDICTIONS:
+                            final_sign = last_good_live or "—"
                     had_hand = False
+                    last_good_live = None
                     pred_buffer.clear()
                     segment_preds.clear()
-                    self.view.root.after(0, lambda f=final_sign: self.view.update_last_completed(f))
-                    self.view.root.after(0, lambda p=final_sign: self.view.update_prediction(p))
-                    self.view.root.after(0, lambda f=final_sign: self.view.append_translation(f))
+                    self.view.root.after(
+                        0, partial(self.view.update_last_completed, final_sign)
+                    )
+                    self.view.root.after(
+                        0, partial(self.view.update_prediction, final_sign)
+                    )
+                    self.view.root.after(
+                        0, partial(self.view.append_sentence, final_sign)
+                    )
                     if (
                         self.view.speak_on_end.get()
                         and final_sign not in IGNORE_PREDICTIONS
@@ -91,6 +110,7 @@ class GestureModel:
                 elif not had_hand and frames_no_hand >= HAND_GONE_FRAMES:
                     pred_buffer.clear()
                     segment_preds.clear()
+                    last_good_live = None
 
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             pil_img = Image.fromarray(rgb).resize((480, 360))

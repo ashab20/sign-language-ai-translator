@@ -23,26 +23,37 @@ class AppController:
 
     def use_ai(self):
         self.ml_model.set_view(self.view)
+        if self.ml_model.is_running:
+            self.view.update_status("Live is already running.")
+            return
         self.ml_model.predict_live()
 
     def stop_ai(self):
         self.ml_model.stop_live()
         self.view.update_status("Stopping AI…")
 
-    def clear_translation(self):
+    def clear_sentence(self):
         if hasattr(self, "view"):
-            self.view.clear_translation_text()
-            self.view.update_status("Translation line cleared.")
+            self.view.clear_sentence_text()
+            self.view.update_status("Sentence cleared.")
 
-    def speak_translation_line(self):
+    def clear_translation(self):
+        """Alias for older code paths."""
+        self.clear_sentence()
+
+    def speak_sentence(self):
         if not hasattr(self, "view"):
             return
-        line = self.view.get_translation_text()
+        line = self.view.get_sentence_text()
         if not line:
             self.view.update_status("Nothing to read yet.")
             return
         speak_async(line)
-        self.view.update_status("Reading translation line…")
+        self.view.update_status("Reading sentence aloud…")
+
+    def speak_translation_line(self):
+        """Alias for older code paths."""
+        self.speak_sentence()
 
     def record_gesture(self):
         label = simpledialog.askstring("Gesture Label", "Enter gesture name (e.g., HELLO):")

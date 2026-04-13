@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from PIL import Image, ImageTk
 from utils.mediapipe_helper import HandTracker
+from utils.frame_pace import FramePacer
 from services.predictor import GesturePredictor
 
 
@@ -22,6 +23,7 @@ class SignAnimator:
         self.predictor = GesturePredictor()
         self.is_running = False
         self.current_idx = 0
+        self.play_fps = 20.0
 
         # Video writer (only if record=True)
         self.out = None
@@ -45,7 +47,7 @@ class SignAnimator:
         os.makedirs("recordings", exist_ok=True)
 
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        self.out = cv2.VideoWriter(self.video_path, fourcc, 20.0, (480, 360))
+        self.out = cv2.VideoWriter(self.video_path, fourcc, self.play_fps, (480, 360))
 
     def _play_loop(self):
         cap = cv2.VideoCapture(0)
@@ -54,6 +56,7 @@ class SignAnimator:
             self.is_running = False
             return
 
+        pacer = FramePacer(self.play_fps)
         while self.is_running and self.current_idx < len(self.text):
             char = self.text[self.current_idx]
 
@@ -76,7 +79,7 @@ class SignAnimator:
 
                 # ----- prediction (shows the *trained* sign name) -----
                 lm = self.tracker.get_landmarks()
-                pred = self.predictor.predict(lm) if lm is not None else "NO HAND"
+                pred = self.predictor.predict(lm) if lm is not None else "NO TRACK"
                 self.view.root.after(0, lambda p=pred: self.view.update_prediction(p))
 
                 # ----- live preview -----
@@ -89,6 +92,8 @@ class SignAnimator:
                 if self.record and self.out:
                     small = cv2.resize(frame, (480, 360))
                     self.out.write(small)
+
+                pacer.tick()
 
             self.current_idx += 1
 

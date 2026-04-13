@@ -5,6 +5,7 @@ import time
 import os
 from datetime import datetime
 from utils.mediapipe_helper import HandTracker
+from utils.frame_pace import FramePacer
 from PIL import Image, ImageTk
 
 class VideoRecorder:
@@ -44,6 +45,7 @@ class VideoRecorder:
             return
 
         char_idx = 0
+        pacer = FramePacer(self.fps)
         while self.is_running and char_idx < len(self.text):
             char = self.text[char_idx]
             duration = 1.5 if char != " " else 0.8
@@ -72,6 +74,8 @@ class VideoRecorder:
 
                 # Update letter
                 self.view.root.after(0, lambda c=char: self.view.update_prediction(c if c != " " else "SPACE"))
+
+                pacer.tick()
 
             char_idx += 1
 
