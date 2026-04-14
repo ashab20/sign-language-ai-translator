@@ -1,25 +1,29 @@
-# FULLY COMPATIBLE: macOS (Intel + Apple Silicon), Windows 10/11
-# Tested on Python 3.11+
+# Sign Language AI Translator
+# Compatible: macOS (Intel + Apple Silicon), Windows 10/11, Linux
+# Python 3.11+
 
-# === CORE ML & DATA ===
+# === ML & Data ===
 numpy==1.26.4
-pandas==2.2.3
 scikit-learn==1.5.2
-joblib==1.5.2
+joblib==1.4.2
 
-# === COMPUTER VISION & HAND TRACKING ===
+# === Computer Vision ===
 opencv-python==4.10.0.84
 mediapipe==0.10.14
 
-# === DATABASE ===
+# === Database ===
 SQLAlchemy==2.0.36
 
 # === GUI ===
 ttkbootstrap==1.18.1
 pillow==10.4.0
 
-# === TEXT-TO-SPEECH (offline, cross-platform) ===
+# === Text-to-Speech ===
 pyttsx3==2.99
 
-# === UTILITIES ===
+# === Visualization (training reports) ===
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# === Utilities ===
 python-dotenv==1.0.0

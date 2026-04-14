@@ -1,143 +1,128 @@
-# Sign Language AI System  
-**Real-time Sign Language Recognition + Text-to-Sign Animation + Video Recording**  
-**SQLite + offline text-to-speech — Windows / macOS**  
+# Sign Language AI Translator
 
-```
-   _____ _                   __                                  
-  / ____(_)                 / /                                  
- | (___  _  __ _ _ __   __ | | ___   __ _ _   _ _ __   __ _ _   _ 
-  \___ \| |/ _` | '_ \ / _` | |/ _ \ / _` | | | | '_ \ / _` | | | |
-  ____) | | (_| | | | | (_| | | (_) | (_| | |_| | | | | (_| | |_| |
- |_____/|_|\__, |_| |_|\__,_|_|\___/ \__, |\__,_|_| |_|\__,_|\__, |
-            __/ |                     __/ |                   __/ |
-           |___/                     |___/                   |___/ 
-```
+An AI-powered desktop application that translates American Sign Language (ASL) gestures into text and speech in real-time. Built as a university thesis project.
 
----
+## Overview
 
-### Compatible Versions (Tested & Guaranteed)
+This application uses computer vision (MediaPipe) and machine learning (Random Forest / MLP Neural Network) to:
 
-| Component           | Version           | Notes                              |
-|---------------------|-------------------|------------------------------------|
-| **Python**          | 3.12.3 (64-bit)   | Must be Python 3.12               |
-| **Windows**         | 10 / 11 (64-bit)  | Fully tested                      |
-| **OpenCV**          | 4.10.0.84         | Pre-built wheels                  |
-| **MediaPipe**       | 0.10.14           | Works on Windows + Apple Silicon  |
-| **SQLite**          | (built-in file DB) | `data/sign_ai.db` — no server install |
+1. **Detect** hand signs through a webcam in real-time
+2. **Classify** signs into letters, words, or phrases
+3. **Build sentences** from a sequence of detected signs
+4. **Speak** the sentence aloud using text-to-speech
 
----
+The goal is to help people who communicate through sign language be understood by everyone.
 
-### Step-by-Step Setup (Windows)
+## Features
 
-#### 1. Install Python 3.11 (64-bit)
-Download: https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe  
-**Check "Add Python to PATH"** during install!
+- Real-time hand tracking and sign detection via webcam
+- Easy training interface -- record your own signs with a click
+- Random Forest and MLP Neural Network classifiers
+- Data augmentation for improved accuracy
+- Training evaluation with accuracy reports and confusion matrix
+- Sentence builder with automatic sign confirmation
+- Text-to-speech output (offline, no internet required)
+- Clean, tabbed user interface
 
-#### 2. Download the Project
+## Quick Start
+
+### 1. Install Python
+
+Requires **Python 3.11 or later**. Download from [python.org](https://www.python.org/downloads/).
+
+### 2. Install Dependencies
+
 ```bash
-git clone [GITHUB](https://github.com/ashab20/sign-language-ai-translator)
-cd sign_ai
-```
-or download as ZIP → extract
+# Create a virtual environment (recommended)
+python -m venv env
+source env/bin/activate    # macOS/Linux
+# env\Scripts\activate     # Windows
 
-#### 3. Create Virtual Environment (Recommended)
-```bash
-python -m venv venv
-source venv\Scripts\activate
-```
-You’ll see `(venv)` in your terminal
-
-#### 4. Install All Dependencies
-```bash
-pip install --upgrade pip
+# Install packages
 pip install -r requirements.txt
 ```
 
-If `ttkbootstrap` fails:
-```bash
-pip install ttkbootstrap==1.18.1
-```
+### 3. Run the Application
 
-> **Tkinter is already included** with Python on Windows – no extra install needed
-
-#### 5. Optional `.env` (in project root)
-
-Default database path is `data/sign_ai.db`. To use another path:
-
-```env
-SQLITE_PATH=data/sign_ai.db
-```
-
-On **macOS**, text-to-speech uses the system `pyttsx3` backend (may require allowing microphone/speech in System Settings if prompted).
-
-#### 6. Run the App!
 ```bash
 python main.py
 ```
 
-First run automatically:
-- Creates SQLite file `data/sign_ai.db` (if missing)
-- Creates table `gestures`
-- Asks for camera permission (click **Allow**)
+### 4. Train the Model
 
-**Important:** Each sample stores **both hands** when visible (126 numbers: right then left in camera space; missing hand is zeros). One-handed signs still work. If you change feature layout or have old samples, **record again and run Train model** so `data/model.pkl` matches.
+1. Go to the **Train Model** tab
+2. Start the camera
+3. Enter a sign name (e.g., `A`, `HELLO`, `THANK YOU`)
+4. Click **Record** and hold your sign steady for 30 frames
+5. Repeat for all signs (minimum 20 samples per sign)
+6. Click **Train Model**
+7. Review accuracy results
 
----
+### 5. Start Detecting
 
-### Quick Usage Guide
+1. Go to the **Detect Signs** tab
+2. Start the camera
+3. Show signs to the camera -- detected signs build into a sentence
+4. Click **Speak Sentence** to hear the sentence read aloud
 
-| Button             | What it does                                      |
-|--------------------|----------------------------------------------------|
-| Record gesture     | Type sign name → hold hand → saves 100 frames     |
-| Train model        | Trains the AI (need ≥10 samples per sign)         |
-| Use AI             | Live recognition with smoothed labels               |
-| Stop AI            | Stops the camera / prediction loop                  |
-| Read aloud (toggle)| When a sign **ends** (hand leaves frame), speaks the last completed sign |
-| Play live          | Animate typed text (e.g., "HELLO WORLD")          |
-| Record video       | Saves the animation as MP4 in `recordings/`       |
-| Play last          | Replays the last recorded video                   |
-
----
-
-### Project Folders After Running
+## Project Structure
 
 ```
-sign_ai/
-├── data/
-│   └── model.pkl              ← your trained model
-├── recordings/
-│   └── HELLO_WORLD_20251120_221300.mp4   ← saved videos
-├── sign_ai.db                 ← inside `data/` (gesture samples)
-└── venv/                      ← virtual environment
+sign-language-ai-translator/
+├── main.py                  # Application entry point
+├── config.py                # Configuration constants
+├── requirements.txt         # Python dependencies
+├── assets/                  # University logo and images
+├── data/                    # Database and trained model (auto-created)
+└── src/
+    ├── ui/                  # User interface (3 tabs)
+    │   ├── app_window.py    # Main window
+    │   ├── detect_tab.py    # Sign detection tab
+    │   ├── train_tab.py     # Training tab
+    │   └── about_tab.py     # About/info tab
+    ├── core/                # Core logic
+    │   ├── hand_detector.py # MediaPipe hand detection
+    │   ├── classifier.py    # ML model (Random Forest / MLP)
+    │   ├── sentence_builder.py
+    │   └── tts_engine.py    # Text-to-speech
+    └── data/                # Data layer
+        ├── database.py      # SQLite database operations
+        └── augmentation.py  # Training data augmentation
 ```
 
----
+## Technology Stack
 
-### Troubleshooting (Windows)
+| Component | Technology |
+|-----------|-----------|
+| Hand Tracking | MediaPipe Hands |
+| ML Classifier | scikit-learn (Random Forest, MLP) |
+| Database | SQLite + SQLAlchemy |
+| GUI | tkinter + ttkbootstrap |
+| Text-to-Speech | pyttsx3 |
+| Visualization | matplotlib + seaborn |
 
-| Problem                              | Fix                                           |
-|--------------------------------------|------------------------------------------------|
-| SQLite “database is locked”          | Close other copies of the app using the same file |
-| Table doesn't exist                  | Just run again – auto-created                  |
-| Camera not working                   | Allow camera in Windows Privacy Settings       |
-| Black screen                         | Click "Use AI" first to test camera            |
-| `ttkbootstrap` error                 | Run: `pip install ttkbootstrap`                |
+## How It Works
 
----
+1. **Hand Detection**: MediaPipe detects up to 2 hands and extracts 21 landmarks per hand
+2. **Feature Extraction**: Landmarks are normalized (wrist-centered, scale-invariant) into an 84-dimensional feature vector
+3. **Classification**: A trained Random Forest or MLP model predicts the sign label
+4. **Smoothing**: A rolling window + majority vote prevents flickering between predictions
+5. **Sentence Building**: Confirmed signs are accumulated into a sentence
+6. **Text-to-Speech**: The sentence is spoken using pyttsx3
 
-### Tested & Confirmed Working
+## Documentation
 
-| OS               | Python   | Status     | Date Tested     |
-|------------------|----------|------------|-----------------|
-| Windows 11 Pro   | 3.11.9   | Perfect    | Nov 20, 2025    |
-| Windows 10 Home  | 3.11.7   | Perfect    | Nov 18, 2025    |
+- [Training Guide](TRAINING_GUIDE.md) -- Step-by-step instructions for training the AI
+- [User Guide](USER_GUIDE.md) -- How to use the application
 
----
+## Compatibility
 
-**Made with love in Bangladesh**  
-**Ashab – November 2025**
+| OS | Status |
+|----|--------|
+| macOS (Intel + Apple Silicon) | Supported |
+| Windows 10/11 | Supported |
+| Linux (Ubuntu 20.04+) | Supported |
 
-**Star this repo if it helped you!**  
+## License
 
-Happy signing!  
-Let’s make communication accessible for everyone.
+This project is part of a university thesis and is intended for educational purposes.

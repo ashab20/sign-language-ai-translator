@@ -1,22 +1,19 @@
-import tkinter as tk
+"""Entry point for the Sign Language AI Translator application."""
 
-from controller.app_controller import AppController
-from view.main_view import MainView
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from src.ui.app_window import SignLanguageApp
+
+
+def main():
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("assets", exist_ok=True)
+    app = SignLanguageApp()
+    app.mainloop()
+
 
 if __name__ == "__main__":
-    controller = AppController()
-    view = MainView(controller)
-    controller.view = view
-
-    def _start_live_translation_if_enabled() -> None:
-        try:
-            if not view.root.winfo_exists():
-                return
-            if view.auto_start_live.get():
-                controller.use_ai()
-        except tk.TclError:
-            pass
-
-    if hasattr(view, "auto_start_live"):
-        view.root.after(250, _start_live_translation_if_enabled)
-    view.run()
+    main()
