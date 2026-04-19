@@ -14,3 +14,4 @@ data/*.svg.png
 *.egg-info/
 dist/
 build/
+THESIS_CONTENT.md
