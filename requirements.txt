@@ -1,0 +1,29 @@
+# Sign Language AI Translator
+# Compatible: macOS (Intel + Apple Silicon), Windows 10/11, Linux
+# Python 3.11, 3.12, or 3.13
+
+# === ML & Data ===
+numpy>=1.26,<3.0
+scikit-learn>=1.5
+joblib>=1.4
+
+# === Computer Vision ===
+opencv-python>=4.10
+mediapipe>=0.10.30
+
+# === Database ===
+SQLAlchemy>=2.0
+
+# === GUI ===
+ttkbootstrap>=1.10
+pillow>=10.4
+
+# === Text-to-Speech ===
+pyttsx3>=2.90
+
+# === Visualization (training reports) ===
+matplotlib>=3.9
+seaborn>=0.13
+
+# === Utilities ===
+python-dotenv>=1.0
